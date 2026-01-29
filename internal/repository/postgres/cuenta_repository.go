@@ -19,11 +19,16 @@ func NewCuentaRepository(db *sql.DB) repository.CuentaRepository {
 }
 
 func (r *CuentaRepository) Create(ctx context.Context, tx repository.Transaction, cuenta *domain.Cuenta) (int, error) {
+	// Validar restricciones antes de insertar si es necesario
+	// - tipo debe ser 'BODEGA' o 'ADMINISTRADOR_APP'
+	// - Si tipo = 'BODEGA', id_bodega no puede ser NULL
+	// - Si tipo = 'ADMINISTRADOR_APP', id_bodega debe ser NULL
+	// - email_login único, id_bodega único
 	query := `
-		INSERT INTO cuentas (tipo, id_bodega, email_login, password_hash, fecha_registro)
-		VALUES ($1, $2, $3, $4, NOW())
-		RETURNING id_cuenta
-	`
+	       INSERT INTO cuentas (tipo, id_bodega, email_login, password_hash, fecha_registro)
+	       VALUES ($1, $2, $3, $4, NOW())
+	       RETURNING id_cuenta
+       `
 
 	var id int
 	err := r.db.QueryRowContext(ctx, query, cuenta.Tipo, cuenta.IDBodega, cuenta.EmailLogin, cuenta.PasswordHash).Scan(&id)

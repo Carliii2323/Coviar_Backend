@@ -20,14 +20,14 @@ func NewResponsableRepository(db *sql.DB) repository.ResponsableRepository {
 
 func (r *ResponsableRepository) Create(ctx context.Context, tx repository.Transaction, responsable *domain.Responsable) (int, error) {
 	query := `
-		INSERT INTO responsables (id_bodega, nombre, apellido, cargo, dni, activo, fecha_registro)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW())
-		RETURNING id_responsable
-	`
+	       INSERT INTO responsables (id_cuenta, nombre, apellido, cargo, dni, activo, fecha_registro, fecha_baja)
+	       VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
+	       RETURNING id_responsable
+       `
 
 	var id int
 	err := r.db.QueryRowContext(ctx, query,
-		responsable.IDBodega, responsable.Nombre, responsable.Apellido, responsable.Cargo, responsable.DNI, responsable.Activo,
+		responsable.IDCuenta, responsable.Nombre, responsable.Apellido, responsable.Cargo, responsable.DNI, responsable.Activo, responsable.FechaBaja,
 	).Scan(&id)
 
 	if err != nil {
@@ -41,14 +41,14 @@ func (r *ResponsableRepository) Create(ctx context.Context, tx repository.Transa
 
 func (r *ResponsableRepository) FindByID(ctx context.Context, id int) (*domain.Responsable, error) {
 	query := `
-		SELECT id_responsable, id_bodega, nombre, apellido, cargo, dni, activo, fecha_registro
-		FROM responsables WHERE id_responsable = $1
-	`
+	       SELECT id_responsable, id_cuenta, nombre, apellido, cargo, dni, activo, fecha_registro, fecha_baja
+	       FROM responsables WHERE id_responsable = $1
+       `
 
 	responsable := &domain.Responsable{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&responsable.ID, &responsable.IDBodega, &responsable.Nombre, &responsable.Apellido,
-		&responsable.Cargo, &responsable.DNI, &responsable.Activo, &responsable.FechaRegistro,
+		&responsable.ID, &responsable.IDCuenta, &responsable.Nombre, &responsable.Apellido,
+		&responsable.Cargo, &responsable.DNI, &responsable.Activo, &responsable.FechaRegistro, &responsable.FechaBaja,
 	)
 
 	if err != nil {
@@ -61,13 +61,14 @@ func (r *ResponsableRepository) FindByID(ctx context.Context, id int) (*domain.R
 	return responsable, nil
 }
 
-func (r *ResponsableRepository) FindByBodegaID(ctx context.Context, bodegaID int) ([]*domain.Responsable, error) {
+// NOTA: Cambiar FindByBodegaID a FindByCuentaID si corresponde a la nueva lógica de negocio
+func (r *ResponsableRepository) FindByCuentaID(ctx context.Context, cuentaID int) ([]*domain.Responsable, error) {
 	query := `
-		SELECT id_responsable, id_bodega, nombre, apellido, cargo, dni, activo, fecha_registro
-		FROM responsables WHERE id_bodega = $1 ORDER BY id_responsable
-	`
+	       SELECT id_responsable, id_cuenta, nombre, apellido, cargo, dni, activo, fecha_registro, fecha_baja
+	       FROM responsables WHERE id_cuenta = $1 ORDER BY id_responsable
+       `
 
-	rows, err := r.db.QueryContext(ctx, query, bodegaID)
+	rows, err := r.db.QueryContext(ctx, query, cuentaID)
 	if err != nil {
 		return nil, fmt.Errorf("error finding responsables: %w", err)
 	}
@@ -77,8 +78,8 @@ func (r *ResponsableRepository) FindByBodegaID(ctx context.Context, bodegaID int
 	for rows.Next() {
 		responsable := &domain.Responsable{}
 		err := rows.Scan(
-			&responsable.ID, &responsable.IDBodega, &responsable.Nombre, &responsable.Apellido,
-			&responsable.Cargo, &responsable.DNI, &responsable.Activo, &responsable.FechaRegistro,
+			&responsable.ID, &responsable.IDCuenta, &responsable.Nombre, &responsable.Apellido,
+			&responsable.Cargo, &responsable.DNI, &responsable.Activo, &responsable.FechaRegistro, &responsable.FechaBaja,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning responsable: %w", err)
@@ -91,13 +92,13 @@ func (r *ResponsableRepository) FindByBodegaID(ctx context.Context, bodegaID int
 
 func (r *ResponsableRepository) Update(ctx context.Context, tx repository.Transaction, responsable *domain.Responsable) error {
 	query := `
-		UPDATE responsable
-		SET nombre = $1, apellido = $2, cargo = $3, dni = $4, activo = $5
-		WHERE id_responsable = $6
-	`
+	       UPDATE responsables
+	       SET nombre = $1, apellido = $2, cargo = $3, dni = $4, activo = $5, fecha_baja = $6
+	       WHERE id_responsable = $7
+       `
 
 	_, err := r.db.ExecContext(ctx, query,
-		responsable.Nombre, responsable.Apellido, responsable.Cargo, responsable.DNI, responsable.Activo, responsable.ID,
+		responsable.Nombre, responsable.Apellido, responsable.Cargo, responsable.DNI, responsable.Activo, responsable.FechaBaja, responsable.ID,
 	)
 
 	if err != nil {
@@ -108,7 +109,7 @@ func (r *ResponsableRepository) Update(ctx context.Context, tx repository.Transa
 }
 
 func (r *ResponsableRepository) Delete(ctx context.Context, tx repository.Transaction, id int) error {
-	query := `DELETE FROM responsabless WHERE id_responsable = $1`
+	query := `DELETE FROM responsables WHERE id_responsable = $1`
 
 	_, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {

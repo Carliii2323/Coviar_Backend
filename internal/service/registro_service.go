@@ -90,12 +90,15 @@ func (s *RegistroService) RegistrarBodega(ctx context.Context, req *domain.Regis
 
 	// Crear responsable
 	responsable := &domain.Responsable{
-		IDBodega: idBodega,
+		IDCuenta: idCuenta,
 		Nombre:   req.Responsable.Nombre,
 		Apellido: req.Responsable.Apellido,
 		Cargo:    req.Responsable.Cargo,
-		DNI:      req.Responsable.DNI,
+		DNI:      "",
 		Activo:   true,
+	}
+	if req.Responsable.DNI != nil {
+		responsable.DNI = *req.Responsable.DNI
 	}
 
 	idResponsable, err := s.responsableRepo.Create(ctx, tx, responsable)

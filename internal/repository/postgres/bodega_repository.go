@@ -19,11 +19,19 @@ func NewBodegaRepository(db *sql.DB) repository.BodegaRepository {
 }
 
 func (r *BodegaRepository) Create(ctx context.Context, tx repository.Transaction, bodega *domain.Bodega) (int, error) {
+	// Validar restricciones antes de insertar si es necesario
+	// - cuit debe ser 11 dígitos
+	// - telefono solo números
+	// - email_institucional debe contener '@'
+	// - numeracion default 'S/N' si está vacío
+	if bodega.Numeracion == "" {
+		bodega.Numeracion = "S/N"
+	}
 	query := `
-		INSERT INTO bodegas (razon_social, nombre_fantasia, cuit, inv_bod, inv_vin, calle, numeracion, id_localidad, telefono, email_institucional, fecha_registro)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-		RETURNING id_bodega
-	`
+	       INSERT INTO bodegas (razon_social, nombre_fantasia, cuit, inv_bod, inv_vin, calle, numeracion, id_localidad, telefono, email_institucional, fecha_registro)
+	       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+	       RETURNING id_bodega
+       `
 
 	var id int
 	err := r.db.QueryRowContext(ctx, query,
