@@ -171,6 +171,47 @@ func (h *AutoevaluacionHandler) CancelarAutoevaluacion(w http.ResponseWriter, r 
 	httputil.RespondJSON(w, http.StatusOK, map[string]string{"mensaje": "Autoevaluación cancelada correctamente"})
 }
 
+// GetHistorialAutoevaluaciones GET /api/autoevaluaciones/historial?id_bodega=X
+func (h *AutoevaluacionHandler) GetHistorialAutoevaluaciones(w http.ResponseWriter, r *http.Request) {
+	idBodegaStr := r.URL.Query().Get("id_bodega")
+	if idBodegaStr == "" {
+		httputil.RespondError(w, http.StatusBadRequest, "id_bodega es requerido")
+		return
+	}
+
+	idBodega, err := strconv.Atoi(idBodegaStr)
+	if err != nil {
+		httputil.RespondError(w, http.StatusBadRequest, "id_bodega inválido")
+		return
+	}
+
+	historial, err := h.service.GetHistorialAutoevaluaciones(r.Context(), idBodega)
+	if err != nil {
+		httputil.HandleServiceError(w, err)
+		return
+	}
+
+	httputil.RespondJSON(w, http.StatusOK, historial)
+}
+
+// GetResultadosAutoevaluacion GET /api/autoevaluaciones/{id_autoevaluacion}/resultados
+func (h *AutoevaluacionHandler) GetResultadosAutoevaluacion(w http.ResponseWriter, r *http.Request) {
+	idStr := router.GetParam(r, "id_autoevaluacion")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		httputil.RespondError(w, http.StatusBadRequest, "ID inválido")
+		return
+	}
+
+	resultados, err := h.service.GetResultadosByID(r.Context(), id, h.bodegaRepo)
+	if err != nil {
+		httputil.HandleServiceError(w, err)
+		return
+	}
+
+	httputil.RespondJSON(w, http.StatusOK, resultados)
+}
+
 // GetResultadosUltimaAutoevaluacion GET /api/bodegas/{id_bodega}/resultados-autoevaluacion
 func (h *AutoevaluacionHandler) GetResultadosUltimaAutoevaluacion(w http.ResponseWriter, r *http.Request) {
 	idStr := router.GetParam(r, "id_bodega")

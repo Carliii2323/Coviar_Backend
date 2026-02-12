@@ -328,3 +328,59 @@ type ResultadoNivelRespuesta struct {
 	Descripcion string `json:"descripcion"`
 	Puntos      int    `json:"puntos"`
 }
+
+// ============================================
+// DTOs PARA HISTORIAL Y RESULTADO DETALLADO
+// ============================================
+
+// HistorialItemResponse representa una autoevaluación en la lista del historial (datos resumidos)
+type HistorialItemResponse struct {
+	IDAutoevaluacion      int                      `json:"id_autoevaluacion"`
+	FechaInicio           time.Time                `json:"fecha_inicio"`
+	FechaFinalizacion     *time.Time               `json:"fecha_finalizacion,omitempty"`
+	Estado                string                   `json:"estado"`
+	IDBodega              int                      `json:"id_bodega"`
+	IDSegmento            *int                     `json:"id_segmento"`
+	NombreSegmento        string                   `json:"nombre_segmento,omitempty"`
+	PuntajeFinal          *int                     `json:"puntaje_final"`
+	PuntajeMaximo         *int                     `json:"puntaje_maximo"`
+	Porcentaje            *int                     `json:"porcentaje"`
+	IDNivelSostenibilidad *int                     `json:"id_nivel_sostenibilidad"`
+	NivelSostenibilidad   *NivelSostenibilidadInfo `json:"nivel_sostenibilidad,omitempty"`
+}
+
+// NivelSostenibilidadInfo contiene info resumida del nivel de sostenibilidad
+type NivelSostenibilidadInfo struct {
+	ID     int    `json:"id"`
+	Nombre string `json:"nombre"`
+}
+
+// ResultadoDetalladoResponse representa el resultado completo de una autoevaluación con desglose por capítulos
+type ResultadoDetalladoResponse struct {
+	Autoevaluacion HistorialItemResponse       `json:"autoevaluacion"`
+	Capitulos      []ResultadoCapituloDetallado `json:"capitulos"`
+}
+
+// ResultadoCapituloDetallado representa el resumen de puntajes de un capítulo con sus indicadores
+type ResultadoCapituloDetallado struct {
+	IDCapitulo             int                         `json:"id_capitulo"`
+	Nombre                 string                      `json:"nombre"`
+	PuntajeObtenido        int                         `json:"puntaje_obtenido"`
+	PuntajeMaximo          int                         `json:"puntaje_maximo"`
+	Porcentaje             int                         `json:"porcentaje"`
+	IndicadoresCompletados int                         `json:"indicadores_completados"`
+	IndicadoresTotal       int                         `json:"indicadores_total"`
+	Indicadores            []ResultadoIndicadorDetalle `json:"indicadores"`
+}
+
+// ResultadoIndicadorDetalle representa un indicador con la respuesta seleccionada
+type ResultadoIndicadorDetalle struct {
+	IDIndicador          int    `json:"id_indicador"`
+	Nombre               string `json:"nombre"`
+	Descripcion          string `json:"descripcion"`
+	Orden                int    `json:"orden"`
+	RespuestaNombre      string `json:"respuesta_nombre"`
+	RespuestaDescripcion string `json:"respuesta_descripcion"`
+	RespuestaPuntos      int    `json:"respuesta_puntos"`
+	PuntajeMaximo        int    `json:"puntaje_maximo"`
+}

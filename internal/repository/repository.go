@@ -89,6 +89,7 @@ type AutoevaluacionRepository interface {
 	Cancel(ctx context.Context, id int) error
 	HasPendingByBodega(ctx context.Context, idBodega int) (bool, error)
 	FindUltimaCompletadaByBodega(ctx context.Context, idBodega int) (*domain.Autoevaluacion, error)
+	FindCompletadasByBodega(ctx context.Context, idBodega int) ([]*domain.Autoevaluacion, error)
 }
 
 type CapituloRepository interface {
@@ -102,6 +103,7 @@ type IndicadorRepository interface {
 
 type NivelRespuestaRepository interface {
 	FindByIndicador(ctx context.Context, idIndicador int) ([]*domain.NivelRespuesta, error)
+	FindMaxPuntosBySegmento(ctx context.Context, idSegmento int) (map[int]int, error)
 }
 
 type RespuestaRepository interface {

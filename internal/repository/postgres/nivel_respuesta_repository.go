@@ -42,3 +42,31 @@ func (r *NivelRespuestaRepository) FindByIndicador(ctx context.Context, idIndica
 
 	return niveles, rows.Err()
 }
+
+// FindMaxPuntosBySegmento retorna el puntaje máximo posible por indicador para un segmento dado
+func (r *NivelRespuestaRepository) FindMaxPuntosBySegmento(ctx context.Context, idSegmento int) (map[int]int, error) {
+	query := `
+		SELECT si.id_indicador, MAX(nr.puntos) as max_puntos
+		FROM segmento_indicador si
+		JOIN niveles_respuesta nr ON nr.id_indicador = si.id_indicador
+		WHERE si.id_segmento = $1
+		GROUP BY si.id_indicador
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, idSegmento)
+	if err != nil {
+		return nil, fmt.Errorf("error querying max puntos by segmento: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[int]int)
+	for rows.Next() {
+		var idIndicador, maxPuntos int
+		if err := rows.Scan(&idIndicador, &maxPuntos); err != nil {
+			return nil, fmt.Errorf("error scanning max puntos: %w", err)
+		}
+		result[idIndicador] = maxPuntos
+	}
+
+	return result, rows.Err()
+}

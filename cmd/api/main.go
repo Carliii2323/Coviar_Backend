@@ -42,16 +42,18 @@ func main() {
 	nivelRespuestaRepo := postgres.NewNivelRespuestaRepository(db.DB)
 	respuestaRepo := postgres.NewRespuestaRepository(db.DB)
 	txManager := postgres.NewTransactionManager(db.DB)
+	adminRepo := postgres.NewAdminRepository(db.DB)
 
 	log.Println("✓ Repositorios inicializados")
 
 	// 4. Inicializar servicios
 	registroService := service.NewRegistroService(bodegaRepo, cuentaRepo, responsableRepo, txManager)
 	ubicacionService := service.NewUbicacionService(ubicacionRepo)
-	cuentaService := service.NewCuentaService(cuentaRepo, bodegaRepo)
+	cuentaService := service.NewCuentaService(cuentaRepo, bodegaRepo, responsableRepo)
 	bodegaService := service.NewBodegaService(bodegaRepo)
 	responsableService := service.NewResponsableService(responsableRepo, cuentaRepo, autoevaluacionRepo)
 	autoevaluacionService := service.NewAutoevaluacionService(autoevaluacionRepo, segmentoRepo, capituloRepo, indicadorRepo, nivelRespuestaRepo, respuestaRepo)
+	adminService := service.NewAdminService(adminRepo)
 
 	log.Println("✓ Servicios inicializados")
 
@@ -62,6 +64,7 @@ func main() {
 	bodegaHandler := handler.NewBodegaHandler(bodegaService)
 	responsableHandler := handler.NewResponsableHandler(responsableService)
 	autoevaluacionHandler := handler.NewAutoevaluacionHandler(autoevaluacionService, bodegaRepo)
+	adminHandler := handler.NewAdminHandler(adminService)
 
 	log.Println("✓ Handlers inicializados")
 
@@ -156,13 +159,20 @@ func main() {
 
 	// Autoevaluaciones (protegidas)
 	r.POST("/api/autoevaluaciones", protect(autoevaluacionHandler.CreateAutoevaluacion))
+	// Rutas estáticas antes de las dinámicas para evitar conflicto con {id_autoevaluacion}
+	r.GET("/api/autoevaluaciones/historial", protect(autoevaluacionHandler.GetHistorialAutoevaluaciones))
 	r.GET("/api/autoevaluaciones/{id_autoevaluacion}/segmentos", protect(autoevaluacionHandler.GetSegmentos))
 	r.PUT("/api/autoevaluaciones/{id_autoevaluacion}/segmento", protect(autoevaluacionHandler.SeleccionarSegmento))
 	r.GET("/api/autoevaluaciones/{id_autoevaluacion}/estructura", protect(autoevaluacionHandler.GetEstructura))
 	r.POST("/api/autoevaluaciones/{id_autoevaluacion}/respuestas", protect(autoevaluacionHandler.GuardarRespuestas))
 	r.POST("/api/autoevaluaciones/{id_autoevaluacion}/completar", protect(autoevaluacionHandler.CompletarAutoevaluacion))
 	r.POST("/api/autoevaluaciones/{id_autoevaluacion}/cancelar", protect(autoevaluacionHandler.CancelarAutoevaluacion))
+	r.GET("/api/autoevaluaciones/{id_autoevaluacion}/resultados", protect(autoevaluacionHandler.GetResultadosAutoevaluacion))
 	r.GET("/api/bodegas/{id_bodega}/resultados-autoevaluacion", protect(autoevaluacionHandler.GetResultadosUltimaAutoevaluacion))
+
+	// Admin (protegidas)
+	r.GET("/api/admin/stats", protect(adminHandler.GetStats))
+	r.GET("/api/admin/evaluaciones", protect(adminHandler.GetAllEvaluaciones))
 
 	// 7. Iniciar servidor
 	addr := cfg.Server.Host + ":" + cfg.Server.Port

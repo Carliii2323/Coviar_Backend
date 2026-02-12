@@ -12,23 +12,26 @@ import (
 )
 
 type CuentaService struct {
-	cuentaRepo repository.CuentaRepository
-	bodegaRepo repository.BodegaRepository
+	cuentaRepo      repository.CuentaRepository
+	bodegaRepo      repository.BodegaRepository
+	responsableRepo repository.ResponsableRepository
 }
 
-func NewCuentaService(cuentaRepo repository.CuentaRepository, bodegaRepo repository.BodegaRepository) *CuentaService {
+func NewCuentaService(cuentaRepo repository.CuentaRepository, bodegaRepo repository.BodegaRepository, responsableRepo repository.ResponsableRepository) *CuentaService {
 	return &CuentaService{
-		cuentaRepo: cuentaRepo,
-		bodegaRepo: bodegaRepo,
+		cuentaRepo:      cuentaRepo,
+		bodegaRepo:      bodegaRepo,
+		responsableRepo: responsableRepo,
 	}
 }
 
 type CuentaConBodega struct {
-	ID            int               `json:"id_cuenta"`
-	Tipo          domain.TipoCuenta `json:"tipo"`
-	EmailLogin    string            `json:"email_login"`
-	FechaRegistro string            `json:"fecha_registro"`
-	Bodega        *domain.Bodega    `json:"bodega,omitempty"`
+	ID            int                  `json:"id_cuenta"`
+	Tipo          domain.TipoCuenta    `json:"tipo"`
+	EmailLogin    string               `json:"email_login"`
+	FechaRegistro string               `json:"fecha_registro"`
+	Bodega        *domain.Bodega       `json:"bodega,omitempty"`
+	Responsable   *domain.Responsable  `json:"responsable,omitempty"`
 }
 
 func (s *CuentaService) Login(ctx context.Context, req *domain.CuentaRequest) (*CuentaConBodega, error) {
@@ -69,6 +72,17 @@ func (s *CuentaService) Login(ctx context.Context, req *domain.CuentaRequest) (*
 		}
 	}
 
+	// Obtener el responsable activo de la cuenta
+	responsables, err := s.responsableRepo.FindByCuentaID(ctx, cuenta.ID)
+	if err == nil {
+		for _, r := range responsables {
+			if r.Activo {
+				result.Responsable = r
+				break
+			}
+		}
+	}
+
 	return result, nil
 }
 
@@ -89,6 +103,17 @@ func (s *CuentaService) GetByIDWithBodega(ctx context.Context, id int) (*CuentaC
 		bodega, err := s.bodegaRepo.FindByID(ctx, *cuenta.IDBodega)
 		if err == nil && bodega != nil {
 			result.Bodega = bodega
+		}
+	}
+
+	// Obtener el responsable activo de la cuenta
+	responsables, err := s.responsableRepo.FindByCuentaID(ctx, cuenta.ID)
+	if err == nil {
+		for _, r := range responsables {
+			if r.Activo {
+				result.Responsable = r
+				break
+			}
 		}
 	}
 
